@@ -1,0 +1,58 @@
+name: ConnectAndroid
+options:
+  deploymentTarget:
+    macOS: '14.0'
+packages:
+  DevFeedback:
+    path: Vendor/DevFeedback
+settings:
+  base:
+    SWIFT_VERSION: '5.0'
+    MACOSX_DEPLOYMENT_TARGET: '14.0'
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: '-'
+    ENABLE_APP_SANDBOX: NO
+    ENABLE_HARDENED_RUNTIME: NO
+    PRODUCT_BUNDLE_IDENTIFIER: com.monroestone.connectandroid
+    MARKETING_VERSION: '0.1.0'
+    CURRENT_PROJECT_VERSION: '1'
+  configs:
+    Release:
+      DEBUG_INFORMATION_FORMAT: dwarf-with-dsym
+      DEPLOYMENT_POSTPROCESSING: YES
+      DEPLOYMENT_LOCATION: NO
+      STRIP_INSTALLED_PRODUCT: YES
+      STRIP_STYLE: all
+      COPY_PHASE_STRIP: YES
+targets:
+  ConnectAndroid:
+    type: application
+    platform: macOS
+    sources: [Sources, Resources]
+    dependencies:
+      - package: DevFeedback
+    settings:
+      base:
+        PRODUCT_NAME: Connect Android
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        GENERATE_INFOPLIST_FILE: NO
+    info:
+      path: Configuration/Info.plist
+      properties:
+        CFBundleDisplayName: Connect Android
+        LSMinimumSystemVersion: '14.0'
+        NSHighResolutionCapable: true
+        NSLocalNetworkUsageDescription: Discover and connect to your Android phone for wireless debugging.
+        NSBonjourServices:
+          - _adb-tls-pairing._tcp
+          - _adb-tls-connect._tcp
+        NSPrincipalClass: NSApplication
+schemes:
+  ConnectAndroid:
+    build:
+      targets:
+        ConnectAndroid: all
+    run:
+      config: Debug
+    archive:
+      config: Release
