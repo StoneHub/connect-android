@@ -26,7 +26,7 @@ Android documents the protocol in [Architecture of ADB Wifi](https://android.goo
 
 Use Xcode and XcodeGen. See `scripts/` for build/install commands and `Vendor/` for the pinned development-only feedback dependency. Release packaging must exclude feedback UI and metadata. Development feedback does not add controls to the normal app layout.
 
-The app is intended for local use. Local signing is not Apple notarization or a public distribution release.
+Public releases are signed with a Developer ID certificate. Notarization status is stated in each release's notes.
 
 Build and install locally (leaving the app closed):
 
