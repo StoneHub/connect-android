@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render the illustrated promotional teaser. Requires Pillow and ffmpeg."""
+"""Render the typography teaser and README preview. Requires Pillow and ffmpeg."""
 import argparse
 import shutil
 import subprocess
@@ -36,32 +36,29 @@ def main():
     ffmpeg = shutil.which("ffmpeg")
     if not ffmpeg:
         raise SystemExit("ffmpeg is required.")
-    poster = ROOT / "docs/media/connect-android-ad-concept.png"
-    if not poster.exists():
-        raise SystemExit(f"Missing artwork: {poster}")
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix="connect-android-teaser-") as temp:
         scratch = Path(temp)
         entries = ["ffconcat version 1.0"]
         for index, (duration, label, headline, body) in enumerate(SCENES):
-            # These are new typography cards. The original illustration stays unchanged.
             card = Image.new("RGB", (1920, 1080), "#101714")
             draw = ImageDraw.Draw(card)
-            draw.rounded_rectangle((100, 120, 165, 130), radius=5, fill="#78e58b")
-            draw.text((100, 165), label, font=font(27, True), fill="#78e58b")
+            draw.rounded_rectangle((140, 110, 230, 122), radius=6, fill="#78e58b")
+            draw.text((140, 158), label, font=font(30, True), fill="#78e58b")
+            draw.text((1780, 158), "CONNECT ANDROID", anchor="ra", font=font(30, True), fill="#8b9c91")
             y = 265
             for line in headline:
-                draw.text((95, y), line, font=font(78, True), fill="#fff5df")
-                y += 95
-            y = max(640, y + 50)
+                draw.text((135, y), line, font=font(108, True), fill="#fff5df")
+                y += 125
+            y = max(665, y + 40)
             for line in body:
-                draw.text((100, y), line, font=font(30), fill="#c1ccc3")
-                y += 46
-            draw.text((100, 930), "macOS 14+  /  Android 11+  /  Platform-Tools  /  Same local network", font=font(22), fill="#8b9c91")
-            draw.text((100, 986), "ILLUSTRATED TEASER", font=font(19, True), fill="#8b9c91")
+                draw.text((140, y), line, font=font(38), fill="#c1ccc3")
+                y += 55
+            draw.text((140, 930), "macOS 14+  /  Android 11+  /  Platform-Tools  /  Same local network", font=font(26), fill="#8b9c91")
+            draw.text((140, 986), "WIRELESS ADB PAIRING FOR MACOS", font=font(20, True), fill="#8b9c91")
             for dot in range(len(SCENES)):
-                x = 100 + dot * 35
-                draw.ellipse((x, 865, x + 10, 875), fill="#78e58b" if dot == index else "#39473e")
+                x = 140 + dot * 40
+                draw.ellipse((x, 865, x + 12, 877), fill="#78e58b" if dot == index else "#39473e")
             path = scratch / f"card-{index}.png"
             card.save(path)
             entries.extend([f"file '{path.name}'", f"duration {duration}"])
@@ -69,16 +66,22 @@ def main():
         timeline = scratch / "cards.ffconcat"
         timeline.write_text("\n".join(entries) + "\n")
         total = sum(scene[0] for scene in SCENES)
-        filters = f"[0:v]fps=30[cards];[1:v]scale=760:760[art];[cards][art]overlay=1080:160,fade=t=in:st=0:d=0.4,fade=t=out:st={total - 0.5}:d=0.5,format=yuv420p[v]"
+        filters = f"fps=30,fade=t=in:st=0:d=0.4,fade=t=out:st={total - 0.5}:d=0.5,format=yuv420p"
         subprocess.run([
             ffmpeg, "-hide_banner", "-loglevel", "warning", "-y",
             "-f", "concat", "-safe", "0", "-i", str(timeline),
-            "-loop", "1", "-i", str(poster),
-            "-filter_complex", filters, "-map", "[v]", "-t", str(total),
+            "-vf", filters, "-t", str(total),
             "-r", "30", "-c:v", "libx264", "-preset", "medium", "-crf", "20",
             "-movflags", "+faststart", "-an", str(args.output),
         ], check=True)
+        preview = args.output.with_suffix(".gif")
+        subprocess.run([
+            ffmpeg, "-hide_banner", "-loglevel", "warning", "-y", "-i", str(args.output),
+            "-filter_complex", "fps=8,scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=64[p];[b][p]paletteuse=dither=bayer",
+            "-loop", "0", str(preview),
+        ], check=True)
     print(args.output)
+    print(preview)
 
 
 if __name__ == "__main__":

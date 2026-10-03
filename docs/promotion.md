@@ -1,12 +1,12 @@
 # Connect Android video materials
 
-## Illustrated teaser
+## Typography teaser
 
 [Watch or download the video](media/connect-android-teaser.mp4).
 
-26 seconds, 1920 × 1080, 30 fps, H.264 MP4 with fast start. Silent, with all messaging on screen. It uses an AI-generated conceptual illustration and typography cards; it does not show a measured pairing time or real device interaction. The illustration is not a screenshot of the app.
+26 seconds, 1920 × 1080, 30 fps, H.264 MP4 with fast start. Silent, with all messaging on screen. It uses text cards; it does not show a measured pairing time or real device interaction. The README features an animated GIF preview that links to the full MP4.
 
-Source art: [poster](media/connect-android-ad-concept.png). Render source: [render-teaser.py](../scripts/render-teaser.py). Requires Python with Pillow, ffmpeg with libx264, and Arial or DejaVu Sans fonts.
+Render source: [render-teaser.py](../scripts/render-teaser.py). Requires Python with Pillow, ffmpeg with libx264, and Arial or DejaVu Sans fonts. Rendering creates both the MP4 and GIF without external artwork.
 
 ```sh
 python3 scripts/render-teaser.py
@@ -24,13 +24,13 @@ Description:
 >
 > Once connected, agents with separately configured Android tools or MCP integrations can use the device through ADB. Connect Android handles the connection step.
 >
-> This is an illustrated teaser. A real-device walkthrough is planned.
+> This is a short teaser. A real-device walkthrough is planned.
 >
 > Source and downloads: https://github.com/StoneHub/connect-android
 >
 > Requirements: macOS 14+, Android 11+, Android SDK Platform-Tools, and the same local network. Check the latest release notes for signing, notarization, and installation details.
 
-This draft has not been uploaded to YouTube. The art and teaser are stored in this repository.
+The teaser is stored in this repository. The copy above is the YouTube upload draft.
 
 ## Real-device walkthrough plan
 

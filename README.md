@@ -8,11 +8,13 @@ I wanted to debug my app. I ended up debugging the connection.
 
 I got tired of fighting wireless debugging setup in Android Studio, so I built a small Mac app for the connection step. **Less pairing. More building.**
 
-[Watch the 26-second illustrated teaser](https://raw.githubusercontent.com/StoneHub/connect-android/main/docs/media/connect-android-teaser.mp4) · [Download the app](https://github.com/StoneHub/connect-android/releases/latest)
+### Watch the video
 
-[![Connect Android illustrated promotional concept](docs/media/connect-android-ad-concept.png)](https://raw.githubusercontent.com/StoneHub/connect-android/main/docs/media/connect-android-teaser.mp4)
+[![Connect Android video — click to watch the 26-second teaser](docs/media/connect-android-teaser.gif)](https://raw.githubusercontent.com/StoneHub/connect-android/main/docs/media/connect-android-teaser.mp4)
 
-Once connected, use ADB from your terminal or your coding agent's configured Android tools. Device control requires those tools or an MCP integration; this app provides the wireless connection. The teaser uses conceptual artwork. See the [video and walkthrough materials](docs/promotion.md) for the planned real-device demonstration.
+**[Watch the full video (MP4)](https://raw.githubusercontent.com/StoneHub/connect-android/main/docs/media/connect-android-teaser.mp4)** · [Download the app](https://github.com/StoneHub/connect-android/releases/latest)
+
+Once connected, use ADB from your terminal or your coding agent's configured Android tools. Device control requires those tools or an MCP integration; this app provides the wireless connection. See the [video and walkthrough materials](docs/promotion.md) for the planned real-device demonstration.
 
 Requires macOS 14 or newer, Android 11 or newer with Wireless debugging enabled, and Android SDK platform-tools (`adb`) installed on the Mac. Both devices must be on the same local network. This app does not bundle platform-tools or upload pairing credentials.
 
