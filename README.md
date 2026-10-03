@@ -2,6 +2,18 @@
 
 An on-demand macOS utility for Android wireless debugging. Open the app from your Desktop, scan a QR code if pairing is needed, and close the window after connection. No menu-bar item, login item, or persistent app helper.
 
+## Why I built it
+
+I wanted to debug my app. I ended up debugging the connection.
+
+I got tired of fighting wireless debugging setup in Android Studio, so I built a small Mac app for the connection step. **Less pairing. More building.**
+
+[Watch the 26-second illustrated teaser](https://raw.githubusercontent.com/StoneHub/connect-android/main/docs/media/connect-android-teaser.mp4) · [Download the app](https://github.com/StoneHub/connect-android/releases/latest)
+
+[![Connect Android illustrated promotional concept](docs/media/connect-android-ad-concept.png)](https://raw.githubusercontent.com/StoneHub/connect-android/main/docs/media/connect-android-teaser.mp4)
+
+Once connected, use ADB from your terminal or your coding agent's configured Android tools. Device control requires those tools or an MCP integration; this app provides the wireless connection. The teaser uses conceptual artwork. See the [video and walkthrough materials](docs/promotion.md) for the planned real-device demonstration.
+
 Requires macOS 14 or newer, Android 11 or newer with Wireless debugging enabled, and Android SDK platform-tools (`adb`) installed on the Mac. Both devices must be on the same local network. This app does not bundle platform-tools or upload pairing credentials.
 
 ## Use
