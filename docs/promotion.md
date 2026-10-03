@@ -1,5 +1,7 @@
 # Connect Android video materials
 
+The teaser was published publicly on October 3, 2026: **[Watch on YouTube](https://youtu.be/mrJRkHjzkwo)**.
+
 ## Typography teaser
 
 [Watch or download the video](media/connect-android-teaser.mp4).
@@ -12,9 +14,9 @@ Render source: [render-teaser.py](../scripts/render-teaser.py). Requires Python 
 python3 scripts/render-teaser.py
 ```
 
-## YouTube teaser upload draft
+## YouTube teaser
 
-Title: **I Got Tired of Android Studio Wireless Pairing, So I Built This**
+Title: **I Got Tired of Android Studio Wireless Pairing—So I Built Connect Android**
 
 Description:
 
@@ -30,7 +32,7 @@ Description:
 >
 > Requirements: macOS 14+, Android 11+, Android SDK Platform-Tools, and the same local network. Check the latest release notes for signing, notarization, and installation details.
 
-The teaser is stored in this repository. The copy above is the YouTube upload draft.
+The teaser is stored in this repository. The description above is reusable promotional copy; the published video includes the source, current release link, requirements, and a note that a real-device walkthrough is planned.
 
 ## Real-device walkthrough plan
 
