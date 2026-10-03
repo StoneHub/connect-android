@@ -1,17 +1,17 @@
 # Connect Android video materials
 
-The teaser was published publicly on October 3, 2026: **[Watch on YouTube](https://youtu.be/mrJRkHjzkwo)**.
+The current promo was published publicly on October 3, 2026: **[Watch on YouTube](https://youtu.be/jyxFQRuv46U)**.
 
-## Typography teaser
+## Animated promo
 
 [Watch or download the video](media/connect-android-teaser.mp4).
 
-26 seconds, 1920 × 1080, 30 fps, H.264 MP4 with fast start. Silent, with all messaging on screen. It uses text cards; it does not show a measured pairing time or real device interaction. The README features an animated GIF preview that links to the full MP4.
+35 seconds, 1920 × 1080, 60 fps, H.264 video with AAC audio. This is the supplied animated promo, preserved byte for byte. It illustrates the pairing frustration, QR connection, and coding-agent workflow. Its UI and timings are illustrative. The README features an animated GIF preview that links to YouTube.
 
-Render source: [render-teaser.py](../scripts/render-teaser.py). Requires Python with Pillow, ffmpeg with libx264, and Arial or DejaVu Sans fonts. Rendering creates both the MP4 and GIF without external artwork.
+Preview source: [make-promo-preview.py](../scripts/make-promo-preview.py). Requires Python and ffmpeg. It regenerates only the GIF; it does not alter the supplied MP4. The prior typography renderer was removed so it cannot overwrite this video.
 
 ```sh
-python3 scripts/render-teaser.py
+python3 scripts/make-promo-preview.py
 ```
 
 ## YouTube teaser
@@ -26,7 +26,7 @@ Description:
 >
 > Once connected, agents with separately configured Android tools or MCP integrations can use the device through ADB. Connect Android handles the connection step.
 >
-> This is a short teaser. A real-device walkthrough is planned.
+> This animated promo illustrates the pairing and agent workflow. The UI and timings are illustrative. A recorded real-device walkthrough is planned.
 >
 > Source and downloads: https://github.com/StoneHub/connect-android
 >

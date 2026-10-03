@@ -10,9 +10,9 @@ I got tired of fighting wireless debugging setup in Android Studio, so I built a
 
 ### Watch the video
 
-[![Connect Android video — click to watch the 26-second teaser](docs/media/connect-android-teaser.gif)](https://youtu.be/mrJRkHjzkwo)
+[![Connect Android video — click to watch the 35-second promo](docs/media/connect-android-teaser.gif)](https://youtu.be/jyxFQRuv46U)
 
-**[Watch on YouTube](https://youtu.be/mrJRkHjzkwo)** · [Download the video (MP4)](https://raw.githubusercontent.com/StoneHub/connect-android/main/docs/media/connect-android-teaser.mp4) · [Download the app](https://github.com/StoneHub/connect-android/releases/latest)
+**[Watch on YouTube](https://youtu.be/jyxFQRuv46U)** · [Download the video (MP4)](https://raw.githubusercontent.com/StoneHub/connect-android/main/docs/media/connect-android-teaser.mp4) · [Download the app](https://github.com/StoneHub/connect-android/releases/latest)
 
 Once connected, use ADB from your terminal or your coding agent's configured Android tools. Device control requires those tools or an MCP integration; this app provides the wireless connection. See the [video and walkthrough materials](docs/promotion.md) for the planned real-device demonstration.
 
