@@ -15,6 +15,12 @@ final class PairingEngine: NSObject, ObservableObject {
     private var task: Task<Void, Never>?
     private var generation = UUID()
     private var discovery: BonjourDiscovery?
+    private let resultURL: URL?
+
+    init(resultURL: URL? = nil) {
+        self.resultURL = resultURL
+        super.init()
+    }
 
     func start(adbURL: URL? = nil) {
         stop()
@@ -23,13 +29,18 @@ final class PairingEngine: NSObject, ObservableObject {
         status = "Checking Android Debug Bridge…"
         task = Task { [weak self] in
             guard let self else { return }
-            do { try await self.connect(adbURL: adbURL) }
+            do {
+                try Task.checkCancellation()
+                try self.writeResult("pending")
+                try await self.connect(adbURL: adbURL)
+            }
             catch is CancellationError { }
             catch {
                 if self.generation == run {
                     self.qrPayload = nil; self.phase = .failed
                     self.status = error.localizedDescription
                     self.record("Stopped: \(error.localizedDescription)")
+                    self.recordTerminalResult("failed", message: self.status)
                 }
             }
             if self.generation == run { self.discovery?.stop(); self.discovery = nil }
@@ -37,6 +48,10 @@ final class PairingEngine: NSObject, ObservableObject {
     }
 
     func stop() {
+        switch phase {
+        case .preparing, .scanning, .pairing, .connecting: recordTerminalResult("cancelled")
+        default: break
+        }
         generation = UUID(); task?.cancel(); task = nil
         discovery?.stop(); discovery = nil; qrPayload = nil
         if phase != .connected { phase = .idle; status = "Ready to connect your Android phone." }
@@ -50,6 +65,53 @@ final class PairingEngine: NSObject, ObservableObject {
         let message: String
         var errorDescription: String? { message }
     }
+
+    private struct Result: Encodable {
+        let version = 1
+        let state: String
+        let device: String?
+        let serial: String?
+        let message: String?
+    }
+
+    private func writeResult(_ state: String, device: String? = nil,
+                             serial: String? = nil, message: String? = nil) throws {
+        guard let resultURL else { return }
+        let files = FileManager.default
+        let staging = resultURL.deletingLastPathComponent()
+            .appendingPathComponent(".connect-android-" + UUID().uuidString, isDirectory: true)
+        do {
+            try files.createDirectory(at: staging, withIntermediateDirectories: false,
+                                      attributes: [.posixPermissions: 0o700])
+            defer { try? files.removeItem(at: staging) }
+            let temporary = staging.appendingPathComponent("result.json")
+            let data = try JSONEncoder().encode(Result(state: state, device: device,
+                                                       serial: serial, message: message))
+            guard files.createFile(atPath: temporary.path, contents: data,
+                                   attributes: [.posixPermissions: 0o600]),
+                  Darwin.rename(temporary.path, resultURL.path) == 0 else {
+                throw CocoaError(.fileWriteUnknown)
+            }
+        } catch {
+            throw Failure(message: "Could not write the automation result. Use a writable result path.")
+        }
+    }
+
+    private func recordTerminalResult(_ state: String, message: String? = nil) {
+        do { try writeResult(state, message: message) }
+        catch { record(error.localizedDescription) }
+    }
+
+    private func onlineNetworkDevices() async throws -> [DeviceRow] {
+        Self.deviceRows(try await adb(["devices", "-l"], timeout: 3))
+            .filter { $0.state == "device" && Self.isNetworkSerial($0.serial) }
+    }
+
+    private func verifiedDevice(_ serial: String) async throws -> String? {
+        do { return try await verify(serial) }
+        catch is CancellationError { throw CancellationError() }
+        catch { return nil }
+    }
     private func connect(adbURL: URL?) async throws {
         let home = FileManager.default.homeDirectoryForCurrentUser.path
         if let adbURL { UserDefaults.standard.set(adbURL.path, forKey: "selectedADBPath") }
@@ -62,8 +124,8 @@ final class PairingEngine: NSObject, ObservableObject {
         let inventory = try await adb(["devices", "-l"])
         let rows = Self.deviceRows(inventory)
         for row in rows where row.state == "device" && Self.isNetworkSerial(row.serial) {
-            if let model = try? await verify(row.serial) {
-                try Task.checkCancellation(); finish(model); return
+            if let model = try await verifiedDevice(row.serial) {
+                try finish(model, serial: row.serial); return
             }
         }
         try Task.checkCancellation()
@@ -77,12 +139,13 @@ final class PairingEngine: NSObject, ObservableObject {
         }
         // Give ADB's known-device auto-connect a brief window before asking for another scan.
         status = "Looking for a previously paired phone…"
+        var beforeQR = Set(rows.filter { $0.state == "device" }.map(\.serial))
         for _ in 0..<3 {
             try await Task.sleep(nanoseconds: 1_000_000_000)
-            let current = Self.deviceRows(try await adb(["devices", "-l"]))
-            for row in current where row.state == "device" && Self.isNetworkSerial(row.serial) {
-                if let model = try? await verify(row.serial) {
-                    try Task.checkCancellation(); finish(model); return
+            for row in try await onlineNetworkDevices() {
+                beforeQR.insert(row.serial)
+                if let model = try await verifiedDevice(row.serial) {
+                    try finish(model, serial: row.serial); return
                 }
             }
         }
@@ -100,6 +163,14 @@ final class PairingEngine: NSObject, ObservableObject {
             let services = try await services()
             pairing = services.first { $0.name == service && $0.type == "_adb-tls-pairing._tcp" }
             if pairing != nil { break }
+            // ADB may auto-connect while its Bonjour advertisements are still missing.
+            if let online = try? await onlineNetworkDevices() {
+                let new = online.filter { !beforeQR.contains($0.serial) }
+                if new.count == 1, let device = new.first,
+                   let model = try await verifiedDevice(device.serial) {
+                    try finish(model, serial: device.serial); return
+                }
+            }
             try await Task.sleep(nanoseconds: 1_000_000_000)
         }
         guard let pairing else { throw Failure(message: "QR expired. Keep both devices on the same Wi-Fi, open the phone’s QR pairing scanner, and Retry. Check Local Network permission if discovery is blocked.") }
@@ -112,24 +183,35 @@ final class PairingEngine: NSObject, ObservableObject {
         let connectionDeadline = Date().addingTimeInterval(45)
         while Date() < connectionDeadline {
             try Task.checkCancellation()
+            if let online = try? await onlineNetworkDevices() {
+                for device in online where Self.matchesPairedDevice(device.serial, host: pairing.host, guid: guid) {
+                    if let model = try await verifiedDevice(device.serial) {
+                        try finish(model, serial: device.serial); return
+                    }
+                }
+            }
             let found = try await services()
             let matches = found.filter { item in
                 item.type == "_adb-tls-connect._tcp" && ((guid.map { !$0.isEmpty && item.name.hasPrefix($0) } ?? false) || item.host == pairing.host)
             }
-            for connection in matches {
+            var tried = Set<String>()
+            for connection in matches where tried.insert(connection.endpoint).inserted {
+                let model: String
                 do {
                     _ = try await adb(["connect", connection.endpoint], timeout: 10)
-                    let model = try await verify(connection.endpoint)
-                    finish(model); return
+                    model = try await verify(connection.endpoint)
                 } catch is CancellationError { throw CancellationError() }
-                catch { record("Connection not ready; retrying within the connection deadline.") }
+                catch { record("Connection not ready; retrying within the connection deadline."); continue }
+                try finish(model, serial: connection.endpoint); return
             }
             try await Task.sleep(nanoseconds: 1_000_000_000)
         }
         throw Failure(message: "Pairing succeeded, but the debugging connection was not verified. Keep Wireless debugging enabled and Retry; check that Wi-Fi allows devices to communicate.")
     }
 
-    private func finish(_ model: String) {
+    private func finish(_ model: String, serial: String) throws {
+        try Task.checkCancellation()
+        try writeResult("ready", device: model, serial: serial)
         deviceName = model; phase = .connected; qrPayload = nil
         status = "Connected: \(model). You can close this app."
         record("Verified device shell: \(model). ADB remains available after the app closes.")
@@ -143,6 +225,14 @@ final class PairingEngine: NSObject, ObservableObject {
     }
     static func isNetworkSerial(_ serial: String) -> Bool {
         !serial.hasPrefix("emulator-") && (serial.contains(":") || serial.contains("._adb-tls-connect._tcp"))
+    }
+    static func matchesPairedDevice(_ serial: String, host: String, guid: String?) -> Bool {
+        if let guid, !guid.isEmpty, serial.hasPrefix(guid), serial.contains("._adb-tls-connect._tcp") {
+            return true
+        }
+        guard let port = serial.lastIndex(of: ":") else { return false }
+        let address = serial[..<port].trimmingCharacters(in: CharacterSet(charactersIn: "[]"))
+        return address == host.trimmingCharacters(in: CharacterSet(charactersIn: "[]"))
     }
     struct DeviceRow { let serial: String; let state: String }
     static func deviceRows(_ output: String) -> [DeviceRow] {

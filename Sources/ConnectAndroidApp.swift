@@ -12,9 +12,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 @main
 struct ConnectAndroidApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
+    private let resultURL: URL? = {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard let flag = arguments.firstIndex(of: "--result-file"),
+              arguments.indices.contains(flag + 1), arguments[flag + 1].hasPrefix("/") else { return nil }
+        return URL(fileURLWithPath: arguments[flag + 1])
+    }()
     var body: some Scene {
         Window("Connect Android", id: "connect") {
-            ConnectionView()
+            ConnectionView(resultURL: resultURL)
                 .frame(width: 460, height: 590)
         }
         .windowResizability(.contentSize)
@@ -28,8 +34,13 @@ struct ConnectAndroidApp: App {
 }
 
 struct ConnectionView: View {
-    @StateObject private var engine = PairingEngine()
+    @StateObject private var engine: PairingEngine
     @State private var details = false
+
+    init(resultURL: URL?) {
+        _engine = StateObject(wrappedValue: PairingEngine(resultURL: resultURL))
+    }
+
     var body: some View {
         VStack(spacing: 18) {
             Image(systemName: engine.phase == .connected ? "checkmark.circle.fill" : "iphone.radiowaves.left.and.right")

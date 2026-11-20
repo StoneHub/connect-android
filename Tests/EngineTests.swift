@@ -88,9 +88,48 @@ import Foundation
         precondition(history().contains("connect 192.168.1.2:38222"))
         precondition(!history().contains("39999"), "Unrelated pairing services must not be selected")
         fresh.stop()
+
+        let resultFile = directory.appendingPathComponent("result.json")
+        let transportFile = directory.appendingPathComponent("transport")
+        func result() -> [String: Any] {
+            guard let data = try? Data(contentsOf: resultFile),
+                  let value = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else { return [:] }
+            return value
+        }
+        try "{\"state\":\"ready\"}".write(to: resultFile, atomically: true, encoding: .utf8)
+        try "offline".write(to: transportFile, atomically: true, encoding: .utf8)
+        try install("""
+        case "$*" in
+          'devices -l') printf 'List of devices attached\\n192.168.1.2:38222 %s\\n' "$(cat '\(transportFile.path)')";;
+          'mdns services') echo 'List of discovered mdns services';;
+          '-s 192.168.1.2:38222 get-state') echo device;;
+          '-s 192.168.1.2:38222 shell getprop ro.product.model') echo RecoveredPhone;;
+          *) exit 9;;
+        esac
+        """)
+        let recovered = PairingEngine(resultURL: resultFile); recovered.start(adbURL: fake)
+        try await wait { recovered.phase == .scanning }
+        precondition(result()["state"] as? String == "pending", "Offline transport must not report ready")
+        precondition(!history().contains("kill-server"))
+        try "device".write(to: transportFile, atomically: true, encoding: .utf8)
+        try await wait { recovered.phase == .connected }
+        precondition(result()["state"] as? String == "ready")
+        precondition(result()["serial"] as? String == "192.168.1.2:38222")
+        precondition(result()["device"] as? String == "RecoveredPhone")
+        let permissions = try FileManager.default.attributesOfItem(atPath: resultFile.path)[.posixPermissions] as? Int
+        precondition(permissions == 0o600)
+        recovered.stop()
+        precondition(result()["state"] as? String == "ready")
+        try "offline".write(to: transportFile, atomically: true, encoding: .utf8)
+        recovered.start(adbURL: fake)
+        try await wait { recovered.phase == .scanning }
+        recovered.stop()
+        precondition(result()["state"] as? String == "cancelled")
+
         try install("exit 1\n")
-        let failed = PairingEngine(); failed.start(adbURL: fake)
+        let failed = PairingEngine(resultURL: resultFile); failed.start(adbURL: fake)
         try await wait { failed.phase == .failed }
+        precondition(result()["state"] as? String == "failed")
         precondition(!history().contains("kill-server"), "Failed inventory must never imply empty inventory")
         failed.stop()
         let pidFile = directory.appendingPathComponent("pid")
@@ -101,6 +140,6 @@ import Foundation
         hanging.stop()
         try await wait { kill(pid, 0) != 0 }
         precondition(!history().contains("kill-server"), "Cancelling an inventory child must not stop the shared server")
-        print("PASS: transport parsing, service port isolation, verified reuse, preservation, secret redaction, QR selection, fresh restart, child cancellation, failed inventory")
+        print("PASS: transport parsing, service port isolation, verified reuse, preservation, secret redaction, QR selection, fresh restart, QR auto-connect recovery, automation results, child cancellation, failed inventory")
     }
 }

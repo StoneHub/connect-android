@@ -26,6 +26,19 @@ Requires macOS 14 or newer, Android 11 or newer with Wireless debugging enabled,
 
 If macOS requests Local Network access, allow it. Network isolation or blocked multicast can prevent discovery. Details contains a bounded local diagnostic log; pairing passwords are excluded. Choose ADB lets you use an SDK installed elsewhere.
 
+### Wait for a connection from automation
+
+Give each invocation a fresh result path in an existing private directory. Quit an already-open Connect Android window before launching with arguments.
+
+```sh
+result_dir=$(mktemp -d)
+open -a 'Connect Android' --args --result-file "$result_dir/result.json"
+```
+
+Read the JSON file until its `state` is `ready`, `failed`, or `cancelled`, with a caller-side timeout. The app atomically replaces the owner-only file, starting with `pending`. A `ready` result includes the `device` model and the `serial` to pass to `adb -s`. It follows a successful device shell check. A failed result can include a `message`. Treat a missing file, a still-pending result when the app exits, or a timeout as an incomplete attempt. Delete the result directory when finished.
+
+If automation already uses a separate local ADB server, pass its socket to the app with `open --env ADB_SERVER_SOCKET=tcp:localhost:5038` alongside the launch arguments. Use that same server for subsequent `adb` commands.
+
 ## Connection policy
 
 - Verify an existing online device before offering a new pairing session.
