@@ -31,11 +31,15 @@ def main():
     parser.add_argument('--configuration', choices=['Debug', 'Release'], default='Release')
     parser.add_argument('--build-only', action='store_true')
     parser.add_argument('--no-launch', action='store_true')
+    parser.add_argument('--adhoc', action='store_true',
+                        help='sign for this Mac only, when the Developer ID certificate is not installed')
     args = parser.parse_args()
     run(['xcodegen', 'generate'], cwd=ROOT)
     build_args = ['xcodebuild', '-project', ROOT / 'ConnectAndroid.xcodeproj', '-scheme', 'ConnectAndroid',
                   '-configuration', args.configuration, '-destination', 'platform=macOS',
                   '-derivedDataPath', ROOT / '.build/xcode']
+    if args.adhoc:
+        build_args += ['CODE_SIGN_IDENTITY=-', 'DEVELOPMENT_TEAM=']
     run(build_args + ['build'], cwd=ROOT)
     settings = json.loads(run(build_args + ['-showBuildSettings', '-json'], cwd=ROOT, capture_output=True, text=True).stdout)
     setting = next(item['buildSettings'] for item in settings if item['target'] == 'ConnectAndroid')

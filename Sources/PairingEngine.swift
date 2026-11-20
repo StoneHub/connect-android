@@ -102,9 +102,9 @@ final class PairingEngine: NSObject, ObservableObject {
         catch { record(error.localizedDescription) }
     }
 
-    private func onlineNetworkDevices() async throws -> [DeviceRow] {
-        Self.deviceRows(try await adb(["devices", "-l"], timeout: 3))
-            .filter { $0.state == "device" && Self.isNetworkSerial($0.serial) }
+    // Wi-Fi, USB and emulator transports all count once they answer a shell command.
+    private func onlineDevices() async throws -> [DeviceRow] {
+        Self.deviceRows(try await adb(["devices", "-l"], timeout: 3)).filter { $0.state == "device" }
     }
 
     private func verifiedDevice(_ serial: String) async throws -> String? {
@@ -113,20 +113,22 @@ final class PairingEngine: NSObject, ObservableObject {
         catch { return nil }
     }
     private func connect(adbURL: URL?) async throws {
-        let home = FileManager.default.homeDirectoryForCurrentUser.path
         if let adbURL { UserDefaults.standard.set(adbURL.path, forKey: "selectedADBPath") }
-        let candidates = [adbURL?.path, UserDefaults.standard.string(forKey: "selectedADBPath"), ProcessInfo.processInfo.environment["ANDROID_HOME"].map { $0 + "/platform-tools/adb" }, ProcessInfo.processInfo.environment["ANDROID_SDK_ROOT"].map { $0 + "/platform-tools/adb" }, home + "/Library/Android/sdk/platform-tools/adb", "/opt/homebrew/bin/adb", "/usr/local/bin/adb"].compactMap { $0 }
-        guard let path = candidates.first(where: { FileManager.default.isExecutableFile(atPath: $0) }) else {
+        guard let path = Self.resolveADB(explicit: adbURL?.path) else {
             throw Failure(message: "ADB was not found. Install Android SDK Platform-Tools, then choose its adb executable.")
         }
         adbPath = path; record("Using \(path)")
         // A failed inventory is not evidence that no transports exist: never kill blindly.
         let inventory = try await adb(["devices", "-l"])
         let rows = Self.deviceRows(inventory)
-        for row in rows where row.state == "device" && Self.isNetworkSerial(row.serial) {
+        for row in rows where row.state == "device" {
             if let model = try await verifiedDevice(row.serial) {
                 try finish(model, serial: row.serial); return
             }
+            record("\(row.serial) is listed but not usable: \(Self.unansweredReason)")
+        }
+        for row in rows where row.state != "device" {
+            record("\(row.serial) is listed but not usable: \(Self.unusableReason(state: row.state))")
         }
         try Task.checkCancellation()
         let latestRows = rows.isEmpty ? Self.deviceRows(try await adb(["devices", "-l"])) : rows
@@ -142,7 +144,7 @@ final class PairingEngine: NSObject, ObservableObject {
         var beforeQR = Set(rows.filter { $0.state == "device" }.map(\.serial))
         for _ in 0..<3 {
             try await Task.sleep(nanoseconds: 1_000_000_000)
-            for row in try await onlineNetworkDevices() {
+            for row in try await onlineDevices() {
                 beforeQR.insert(row.serial)
                 if let model = try await verifiedDevice(row.serial) {
                     try finish(model, serial: row.serial); return
@@ -164,7 +166,7 @@ final class PairingEngine: NSObject, ObservableObject {
             pairing = services.first { $0.name == service && $0.type == "_adb-tls-pairing._tcp" }
             if pairing != nil { break }
             // ADB may auto-connect while its Bonjour advertisements are still missing.
-            if let online = try? await onlineNetworkDevices() {
+            if let online = try? await onlineDevices() {
                 let new = online.filter { !beforeQR.contains($0.serial) }
                 if new.count == 1, let device = new.first,
                    let model = try await verifiedDevice(device.serial) {
@@ -183,7 +185,7 @@ final class PairingEngine: NSObject, ObservableObject {
         let connectionDeadline = Date().addingTimeInterval(45)
         while Date() < connectionDeadline {
             try Task.checkCancellation()
-            if let online = try? await onlineNetworkDevices() {
+            if let online = try? await onlineDevices() {
                 for device in online where Self.matchesPairedDevice(device.serial, host: pairing.host, guid: guid) {
                     if let model = try await verifiedDevice(device.serial) {
                         try finish(model, serial: device.serial); return
@@ -223,8 +225,33 @@ final class PairingEngine: NSObject, ObservableObject {
         guard !model.isEmpty else { throw Failure(message: "Device shell returned no identity.") }
         return model
     }
-    static func isNetworkSerial(_ serial: String) -> Bool {
+    nonisolated static func isNetworkSerial(_ serial: String) -> Bool {
         !serial.hasPrefix("emulator-") && (serial.contains(":") || serial.contains("._adb-tls-connect._tcp"))
+    }
+    nonisolated static func transport(of serial: String) -> String {
+        serial.hasPrefix("emulator-") ? "emulator" : isNetworkSerial(serial) ? "wifi" : "usb"
+    }
+    nonisolated static func resolveADB(explicit: String? = nil) -> String? {
+        let environment = ProcessInfo.processInfo.environment
+        let home = FileManager.default.homeDirectoryForCurrentUser.path
+        let candidates = [explicit, UserDefaults.standard.string(forKey: "selectedADBPath"),
+                          environment["ANDROID_HOME"].map { $0 + "/platform-tools/adb" },
+                          environment["ANDROID_SDK_ROOT"].map { $0 + "/platform-tools/adb" },
+                          home + "/Library/Android/sdk/platform-tools/adb", "/opt/homebrew/bin/adb", "/usr/local/bin/adb"].compactMap { $0 }
+        return candidates.first { FileManager.default.isExecutableFile(atPath: $0) }
+    }
+    nonisolated static let unansweredReason = "ADB lists it as ready, but it did not answer a shell command within 5 seconds. Wake the phone and check it is still on this network or cable."
+    // Why a transport that `adb devices` lists cannot be used yet, in words for the Details log.
+    nonisolated static func unusableReason(state: String) -> String {
+        switch state {
+        case "unauthorized": return "this Mac is not authorized. Unlock the phone and accept the debugging prompt, or pair again."
+        case "authorizing": return "authorization is still in progress. Check the phone for a prompt."
+        case "offline": return "the phone is not responding. Wake it, check it is on the same Wi-Fi, or turn Wireless debugging off and on."
+        case "connecting": return "ADB is still connecting to it."
+        case "no": return "ADB has no permission to open this USB device. Replug it and accept the prompt on the phone."
+        case "recovery", "sideload", "bootloader", "rescue": return "it is in \(state) mode, not running Android."
+        default: return "ADB reports it as \(state), which does not accept shell commands."
+        }
     }
     static func matchesPairedDevice(_ serial: String, host: String, guid: String?) -> Bool {
         if let guid, !guid.isEmpty, serial.hasPrefix(guid), serial.contains("._adb-tls-connect._tcp") {
@@ -235,7 +262,7 @@ final class PairingEngine: NSObject, ObservableObject {
         return address == host.trimmingCharacters(in: CharacterSet(charactersIn: "[]"))
     }
     struct DeviceRow { let serial: String; let state: String }
-    static func deviceRows(_ output: String) -> [DeviceRow] {
+    nonisolated static func deviceRows(_ output: String) -> [DeviceRow] {
         output.split(separator: "\n").compactMap { line in
             let words = line.split(whereSeparator: { $0.isWhitespace }).map(String.init)
             guard words.count >= 2, !line.hasPrefix("List of devices"), !line.hasPrefix("*"), !line.hasPrefix("adb:") else { return nil }
@@ -243,7 +270,7 @@ final class PairingEngine: NSObject, ObservableObject {
         }
     }
     struct Service { let name: String; let type: String; let endpoint: String; let host: String }
-    static func parseServices(_ output: String) -> [Service] {
+    nonisolated static func parseServices(_ output: String) -> [Service] {
         output.split(separator: "\n").compactMap { line in
             let words = line.split(whereSeparator: { $0.isWhitespace }).map(String.init)
             guard words.count == 3, words[1].hasPrefix("_adb-tls-"), let colon = words[2].lastIndex(of: ":") else { return nil }
@@ -306,7 +333,7 @@ final class PairingEngine: NSObject, ObservableObject {
 }
 
 @MainActor
-private final class BonjourDiscovery: NSObject, @preconcurrency NetServiceBrowserDelegate, @preconcurrency NetServiceDelegate {
+final class BonjourDiscovery: NSObject, @preconcurrency NetServiceBrowserDelegate, @preconcurrency NetServiceDelegate {
     private var browsers: [NetServiceBrowser] = []
     private var pending: [NetService] = []
     private(set) var services: [PairingEngine.Service] = []

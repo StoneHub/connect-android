@@ -10,6 +10,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 }
 
 @main
+enum Launcher {
+    static func main() {
+        // --status and --mcp never open a window; they answer on stdout and exit with their caller.
+        let arguments = CommandLine.arguments
+        if arguments.contains("--status") || arguments.contains("--mcp") {
+            Task.detached { exit(await AgentBridge.runCommandLine(arguments)) }
+            // The main run loop also carries the Bonjour browse that connect uses.
+            while true { RunLoop.main.run(mode: .default, before: .distantFuture) }
+        }
+        ConnectAndroidApp.main()
+    }
+}
+
 struct ConnectAndroidApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) var delegate
     private let resultURL: URL? = {

@@ -14,7 +14,7 @@ I got tired of fighting wireless debugging setup in Android Studio, so I built a
 
 **[Watch on YouTube](https://youtu.be/jyxFQRuv46U)** · [Download the video (MP4)](https://raw.githubusercontent.com/StoneHub/connect-android/main/docs/media/connect-android-teaser.mp4) · [Download the app](https://github.com/StoneHub/connect-android/releases/latest)
 
-Once connected, use ADB from your terminal or your coding agent's configured Android tools. Device control requires those tools or an MCP integration; this app provides the wireless connection. See the [video and walkthrough materials](docs/promotion.md) for the planned real-device demonstration.
+Once connected, use ADB from your terminal, or let a coding agent drive the phone through the app's own [MCP mode](#use-from-a-coding-agent-mcp). See the [video and walkthrough materials](docs/promotion.md) for the planned real-device demonstration.
 
 Requires macOS 14 or newer, Android 11 or newer with Wireless debugging enabled, and Android SDK platform-tools (`adb`) installed on the Mac. Both devices must be on the same local network. This app does not bundle platform-tools or upload pairing credentials.
 
@@ -23,6 +23,8 @@ Requires macOS 14 or newer, Android 11 or newer with Wireless debugging enabled,
 1. Open **Connect Android**.
 2. If a QR code appears, open **Developer options → Wireless debugging → Pair device with QR code** on your phone and scan it.
 3. Wait for the connected device name. Close the app; ADB retains the connection.
+
+A device that is already connected and answers a shell command counts as connected, whether it is on Wi-Fi, on a USB cable, or an emulator. No QR code is shown in that case. When ADB lists a device that cannot be used (unauthorized, offline, not answering), Details says why.
 
 If macOS requests Local Network access, allow it. Network isolation or blocked multicast can prevent discovery. Details contains a bounded local diagnostic log; pairing passwords are excluded. Choose ADB lets you use an SDK installed elsewhere.
 
@@ -39,9 +41,35 @@ Read the JSON file until its `state` is `ready`, `failed`, or `cancelled`, with 
 
 If automation already uses a separate local ADB server, pass its socket to the app with `open --env ADB_SERVER_SOCKET=tcp:localhost:5038` alongside the launch arguments. Use that same server for subsequent `adb` commands.
 
+### Check the connection from a script
+
+```sh
+'/Applications/Connect Android.app/Contents/MacOS/Connect Android' --status
+```
+
+Prints one JSON object and exits without opening a window. `ready` is true when at least one device answered a shell command. Each entry in `devices` has its `serial`, ADB `state`, `transport` (`wifi`, `usb` or `emulator`), `usable`, and either the `model` or the `reason` it cannot be used. Exit status is 0 when ready, 1 when no device is usable, 2 when ADB could not be run. It never pairs and never restarts the ADB server.
+
+### Use from a coding agent (MCP)
+
+`--mcp` speaks the Model Context Protocol over stdin and stdout. The agent starts the process, and the process exits when the agent closes the pipe: nothing is installed, nothing listens on a port, and nothing keeps running afterwards.
+
+```sh
+claude mcp add --scope user connect-android -- '/Applications/Connect Android.app/Contents/MacOS/Connect Android' --mcp
+```
+
+| Tool | What it does |
+| --- | --- |
+| `status` | The same report as `--status`. |
+| `connect` | Reuses a device that already answers; otherwise connects a phone paired earlier that is advertising on the network; otherwise opens the Connect Android window for a QR scan and waits for its result. Accepts an `endpoint` (`host:port` from the Wireless debugging screen). |
+| `adb` | Runs one adb command against the device and returns its output. Refuses `kill-server`, `pair`, `disconnect`, `tcpip`, `usb` and `reconnect`, and interactive `shell`. |
+| `install` | Installs or updates an APK from a path on the Mac. |
+| `screenshot` | Returns the screen as an image. On a phone with two displays it captures the one that is on. |
+
+With one usable device the tools need no `serial`. Every command has a time limit. If the phone is on the network but ADB reports “No route to host”, `connect` says so: macOS returns that when the app that started the ADB server lacks Local Network permission.
+
 ## Connection policy
 
-- Verify an existing online device before offering a new pairing session.
+- Verify an existing online device (Wi-Fi, USB or emulator) before offering a new pairing session.
 - Preserve existing ADB transports. Refresh the server automatically only when none are listed.
 - Generate fresh local pairing credentials; discover the exact service requested by the QR code.
 - Pair and connect through separate endpoints, then run a device command before reporting success.
@@ -61,11 +89,13 @@ Build and install locally (leaving the app closed):
 python3 scripts/build-install.py --no-launch
 ```
 
+On a Mac without the Developer ID certificate, add `--adhoc` to sign the Release build for that Mac only.
+
 Run isolated connection tests without touching a phone or the real ADB server:
 
 ```sh
 mkdir -p .build
-swiftc Sources/PairingEngine.swift Tests/EngineTests.swift -parse-as-library -o .build/engine-tests
+swiftc Sources/PairingEngine.swift Sources/AgentBridge.swift Tests/EngineTests.swift -parse-as-library -o .build/engine-tests
 .build/engine-tests
 ```
 

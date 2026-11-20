@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		31AB7253785F55AC78956896 /* PairingEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = ADAEE818B7EE40114A1BC8E7 /* PairingEngine.swift */; };
+		5142F7D401275FEBFA438C90 /* AgentBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = EC1EE9E5AAA8AE51E08EC017 /* AgentBridge.swift */; };
 		66B03AB71747C20A64C96475 /* FeedbackCompatibility.swift in Sources */ = {isa = PBXBuildFile; fileRef = 695C12116D7B6F95D2A6D30C /* FeedbackCompatibility.swift */; };
 		7B151B8FD16800D74CE28AC5 /* ConnectAndroidApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 26AF3F8844F9F2CF3296B9C3 /* ConnectAndroidApp.swift */; };
 		A295A838E0BCFB9AADD91689 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 5756F00052218CCC47AFF0A9 /* Assets.xcassets */; };
@@ -21,6 +22,7 @@
 		695C12116D7B6F95D2A6D30C /* FeedbackCompatibility.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FeedbackCompatibility.swift; sourceTree = "<group>"; };
 		ADAEE818B7EE40114A1BC8E7 /* PairingEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PairingEngine.swift; sourceTree = "<group>"; };
 		E0077A7A88D21962255E0E38 /* DevFeedback */ = {isa = PBXFileReference; lastKnownFileType = folder; name = DevFeedback; path = Vendor/DevFeedback; sourceTree = SOURCE_ROOT; };
+		EC1EE9E5AAA8AE51E08EC017 /* AgentBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AgentBridge.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -62,6 +64,7 @@
 		B51391DE809B274AEC8E11B7 /* Sources */ = {
 			isa = PBXGroup;
 			children = (
+				EC1EE9E5AAA8AE51E08EC017 /* AgentBridge.swift */,
 				26AF3F8844F9F2CF3296B9C3 /* ConnectAndroidApp.swift */,
 				695C12116D7B6F95D2A6D30C /* FeedbackCompatibility.swift */,
 				ADAEE818B7EE40114A1BC8E7 /* PairingEngine.swift */,
@@ -109,7 +112,7 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
-				LastUpgradeCheck = 1430;
+				LastUpgradeCheck = 1600;
 				TargetAttributes = {
 					9D770E64855820322380BCD3 = {
 						ProvisioningStyle = Manual;
@@ -154,6 +157,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				5142F7D401275FEBFA438C90 /* AgentBridge.swift in Sources */,
 				7B151B8FD16800D74CE28AC5 /* ConnectAndroidApp.swift in Sources */,
 				66B03AB71747C20A64C96475 /* FeedbackCompatibility.swift in Sources */,
 				31AB7253785F55AC78956896 /* PairingEngine.swift in Sources */,
