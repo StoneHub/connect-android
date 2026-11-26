@@ -67,8 +67,10 @@ class DebugWidgetProvider : AppWidgetProvider() {
                 R.id.widgetRoot,
                 context.getString(R.string.widget_content_description, text.detail(state)),
             )
-            val tap = when (state) {
-                DebugState.NeedsPermission, DebugState.DeveloperOptionsOff -> PendingIntent.getActivity(
+            val debugging = WirelessDebugging(context)
+            val canToggle = debugging.canWriteSecureSettings() && state != DebugState.DeveloperOptionsOff
+            val tap = when {
+                !canToggle -> PendingIntent.getActivity(
                     context,
                     0,
                     Intent(context, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK),

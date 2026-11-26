@@ -31,8 +31,9 @@ class WirelessDebuggingTileService : TileService() {
     override fun onClick() {
         super.onClick()
         val debugging = WirelessDebugging(this)
-        when (debugging.state(null)) {
-            DebugState.NeedsPermission, DebugState.DeveloperOptionsOff -> openSetup()
+        when {
+            // Without the grant (even if debugging was turned on in Settings), setup explains the fix.
+            !debugging.canWriteSecureSettings() || !debugging.developerOptionsOn() -> openSetup()
             else -> {
                 qsTile?.apply {
                     state = Tile.STATE_UNAVAILABLE
