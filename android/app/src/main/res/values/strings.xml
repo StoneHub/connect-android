@@ -1,0 +1,54 @@
+<resources>
+    <string name="app_name">Connect Android</string>
+    <string name="tile_label">Wireless ADB</string>
+    <string name="state_needs_permission">Needs Mac setup</string>
+    <string name="state_dev_options_off">Developer options off</string>
+    <string name="state_off">Off</string>
+    <string name="state_on">On</string>
+    <string name="state_on_port">On · port %1$d</string>
+    <string name="state_on_finding_port">On · finding port…</string>
+    <string name="widget_title_on">Debugging on</string>
+    <string name="widget_title_off">Debugging off</string>
+    <string name="widget_detail_off">Tap to turn on</string>
+    <string name="widget_preview_detail">100.118.0.1:41234</string>
+    <string name="widget_description">Tap to turn wireless debugging on or off and see the address your Mac connects to.</string>
+    <string name="widget_content_description">Wireless debugging, %1$s. Double tap to switch.</string>
+
+    <string name="main_title">Connect Android</string>
+    <string name="main_subtitle">Wireless debugging from Quick Settings, your home screen, and the Connect Android Mac app.</string>
+    <string name="main_state_on">Wireless debugging is on</string>
+    <string name="main_state_off">Wireless debugging is off</string>
+    <string name="main_state_dev_off">Developer options is off</string>
+    <string name="main_detail_off">Turn it on here, from the tile, or from the widget.</string>
+    <string name="main_detail_needs_permission">Finish the one-time Mac setup below to control it from this phone.</string>
+    <string name="main_detail_dev_off">Wireless debugging lives in Developer options. Turn that on first.</string>
+    <string name="action_turn_on">Turn on</string>
+    <string name="action_turn_off">Turn off</string>
+    <string name="action_copy_connect">Copy adb connect</string>
+    <string name="copied">Copied</string>
+    <string name="clip_connect_label">adb connect command</string>
+    <string name="clip_grant_label">adb grant command</string>
+
+    <string name="permission_title">One-time Mac setup</string>
+    <string name="permission_body">Android only lets a computer grant control of wireless debugging. Open Connect Android on your Mac while this phone is connected and click Allow phone controls. Or run this once:</string>
+    <string name="permission_note">This grants WRITE_SECURE_SETTINGS. Connect Android only changes wireless debugging and pairing expiry with it. Uninstalling the app removes the grant.</string>
+    <string name="action_copy_command">Copy command</string>
+
+    <string name="dev_options_title">Turn on Developer options</string>
+    <string name="dev_options_body">Settings → About phone → Software information → tap Build number seven times. Then come back here.</string>
+    <string name="action_open_dev_options">Open Developer options</string>
+
+    <string name="keep_alive_title">Stay connected</string>
+    <string name="keep_alive_switch">Turn back on when Wi-Fi reconnects</string>
+    <string name="keep_alive_body">Android turns wireless debugging off whenever Wi-Fi drops. This turns it back on when Wi-Fi returns and after a restart, and nothing runs in between. On a new network, tick "Always allow on this network" once.</string>
+    <string name="no_expiry_switch">Keep computer approvals from expiring</string>
+    <string name="no_expiry_body">Android forgets a paired computer after 7 days of disuse, which forces a new QR scan.</string>
+
+    <string name="shortcuts_title">Shortcuts</string>
+    <string name="action_add_tile">Add Quick Settings tile</string>
+    <string name="action_add_widget">Add home-screen widget</string>
+    <string name="add_tile_done">Quick Settings tile is ready.</string>
+    <string name="add_tile_manual">Open Quick Settings edit mode and drag Wireless debugging into place.</string>
+    <string name="add_widget_sent">Follow your launcher\'s prompt to place the widget.</string>
+    <string name="add_widget_manual">Long-press your home screen, choose Widgets, and add Connect Android.</string>
+</resources>

@@ -47,10 +47,11 @@ struct ConnectionView: View {
                         .tagged("connection.qr", "Pairing QR code")
                 } else if engine.phase == .connected {
                     VStack(spacing: 12) {
-                        Image(systemName: "iphone.gen3").font(.system(size: 84)).foregroundStyle(.secondary)
+                        Image(systemName: "iphone.gen3").font(.system(size: 64)).foregroundStyle(.secondary)
                         Text(engine.deviceName ?? "Android device").font(.title2.bold())
                         Text("You can close this window.\nYour debugging connection stays available.")
                             .multilineTextAlignment(.center).foregroundStyle(.secondary)
+                        companionRow
                     }.frame(height: 240).tagged("connection.device", "Connected device")
                 } else if engine.phase == .failed {
                     VStack(spacing: 14) {
@@ -96,6 +97,30 @@ struct ConnectionView: View {
         .feedbackOverlay(appID: "com.monroestone.connectandroid", screen: "connection")
         #endif
     }
+    /// Offers the one-time grant the Connect Android phone app needs to control wireless debugging.
+    @ViewBuilder private var companionRow: some View {
+        switch engine.companion {
+        case .needsGrant, .failed:
+            VStack(spacing: 6) {
+                Button(engine.companion == .failed ? "Retry Allow Phone Controls" : "Allow Phone Controls") {
+                    engine.allowPhoneControls()
+                }
+                .buttonStyle(.borderedProminent)
+                .tagged("connection.allowcontrols", "Allow phone controls")
+                Text("Lets the Connect Android phone app turn wireless debugging on and keep it on.")
+                    .font(.caption).multilineTextAlignment(.center).foregroundStyle(.secondary)
+            }
+        case .granting:
+            ProgressView().controlSize(.small)
+        case .granted:
+            Label("Phone controls allowed", systemImage: "checkmark.seal.fill")
+                .font(.callout).foregroundStyle(.green)
+                .tagged("connection.controlsallowed", "Phone controls allowed")
+        case .notInstalled, .unknown:
+            EmptyView()
+        }
+    }
+
     private func chooseADB() {
         let panel = NSOpenPanel()
         panel.title = "Choose the adb executable in Android SDK platform-tools"
