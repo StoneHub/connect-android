@@ -26,9 +26,34 @@ Requires macOS 14 or newer, Android 11 or newer with Wireless debugging enabled,
 
 If macOS requests Local Network access, allow it. Network isolation or blocked multicast can prevent discovery. Details contains a bounded local diagnostic log; pairing passwords are excluded. Choose ADB lets you use an SDK installed elsewhere.
 
+## Phone app
+
+The `android/` folder holds the Connect Android phone app (Android 11+). It adds:
+
+- A **Wireless ADB** Quick Settings tile and a home-screen widget that turn wireless debugging on or off and show the current port.
+- **Stay connected**: Android turns wireless debugging off whenever Wi-Fi drops. With this on, the phone turns it back on when Wi-Fi returns and after a restart. It uses a one-shot network callback and a settings content trigger, so nothing runs in between.
+- **Keep computer approvals from expiring**: stops Android from forgetting this Mac after 7 days of disuse, which otherwise forces a new QR scan.
+
+Toggling wireless debugging needs `WRITE_SECURE_SETTINGS`, which only adb can grant. When the phone app is installed and not yet allowed, the Mac app shows **Allow Phone Controls** after connecting; one click runs the grant over the existing connection. The grant survives app updates and is removed on uninstall. You can also run it yourself:
+
+```sh
+adb shell pm grant com.monroestone.connectandroid android.permission.WRITE_SECURE_SETTINGS
+```
+
+Build and install the phone app:
+
+```sh
+cd android && ./gradlew installDebug
+```
+
+| App | Widget | Quick Settings |
+|---|---|---|
+| <img src="docs/media/android-app-on.png" width="220"> | <img src="docs/media/android-widget-on.png" width="260"><br><img src="docs/media/android-widget-off.png" width="260"> | <img src="docs/media/android-tile-on.png" width="220"> |
+
 ## Connection policy
 
 - Verify an existing online device before offering a new pairing session.
+- Before showing a QR code, try the last working address, then the phone's LAN mDNS record, then the phone's Tailscale address. Wireless debugging picks a new port each time, so the Mac finds it with a bounded TCP scan of only your own online Android tailnet devices (never shared devices). Only already-paired phones can verify.
 - Preserve existing ADB transports. Refresh the server automatically only when none are listed.
 - Generate fresh local pairing credentials; discover the exact service requested by the QR code.
 - Pair and connect through separate endpoints, then run a device command before reporting success.

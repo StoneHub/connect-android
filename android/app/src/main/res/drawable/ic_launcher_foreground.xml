@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Phone outline, matching the Mac app icon. -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFFFF"
+        android:strokeWidth="2.6"
+        android:pathData="M44,31h20a5,5 0,0 1,5 5v36a5,5 0,0 1,-5 5h-20a5,5 0,0 1,-5 -5v-36a5,5 0,0 1,5 -5z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M50,35.5h8a0.9,0.9 0,0 1,0 1.8h-8a0.9,0.9 0,0 1,0 -1.8z" />
+    <group
+        android:translateX="44"
+        android:translateY="46"
+        android:scaleX="0.8333"
+        android:scaleY="0.8333">
+        <path
+            android:fillColor="#FFFFFFFF"
+            android:pathData="M1,9l2,2c4.97,-4.97 13.03,-4.97 18,0l2,-2C16.93,2.93 7.08,2.93 1,9zM9,17l3,3 3,-3c-1.65,-1.66 -4.34,-1.66 -6,0zM5,13l2,2c2.76,-2.76 7.24,-2.76 10,0l2,-2C15.14,9.14 8.87,9.14 5,13z" />
+    </group>
+</vector>
